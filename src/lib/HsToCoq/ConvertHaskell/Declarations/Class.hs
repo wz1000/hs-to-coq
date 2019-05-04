@@ -94,10 +94,10 @@ convertAssociatedType classArgs FamilyDecl{..} = do
   storeExplicitMethodArguments name args
   
   result <- case unLoc fdResultSig of
-    NoSig                            -> pure $ Sort Type
-    KindSig   k                      -> convertLType k
-    TyVarSig (L _ (UserTyVar _))     -> pure $ Sort Type -- Maybe not a thing inside type classes?
-    TyVarSig (L _ (KindedTyVar _ k)) -> convertLType k   -- Maybe not a thing inside type classes?
+    NoSig _                          -> pure $ Sort Type
+    KindSig _ k                      -> convertLType k
+    TyVarSig _ (L _ (UserTyVar _ _))     -> pure $ Sort Type -- Maybe not a thing inside type classes?
+    TyVarSig _ (L _ (KindedTyVar _ _ k)) -> convertLType k   -- Maybe not a thing inside type classes?
   
   pure (name, result)
 

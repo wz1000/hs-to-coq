@@ -90,6 +90,7 @@ convertExpr :: LocalConvMonad r m => HsExpr GhcRn -> m Term
 convertExpr hsExpr = convertExpr' hsExpr >>= rewriteExpr
 
 convertExpr' :: forall r m. LocalConvMonad r m => HsExpr GhcRn -> m Term
+convertExpr' = undefined {-
 convertExpr' (HsVar (L _ x)) =
   Qualid <$> var ExprNS x
 
@@ -411,6 +412,7 @@ convertExpr' (HsConLikeOut{}) =
 
 convertExpr' (ExplicitSum{}) =
   convUnsupported "`ExplicitSum' constructor"
+-}
 
 --------------------------------------------------------------------------------
 
@@ -420,7 +422,7 @@ convert_section  ml opE mr = do
   let -- We need this type signature, and I think it's because @let@ isn't being
       -- generalized.
       hs :: ConversionMonad r m => Qualid -> m (HsExpr GhcRn)
-      hs  = fmap (HsVar . mkGeneralLocated "generated") . freshInternalName . T.unpack . qualidToIdent
+      hs  = undefined -- fmap (HsVar . mkGeneralLocated "generated") . freshInternalName . T.unpack . qualidToIdent
       coq = Inferred Coq.Explicit . Ident
 
   arg <- Bare <$> gensym "arg"
@@ -428,7 +430,7 @@ convert_section  ml opE mr = do
   l <- orArg ml
   r <- orArg mr
   -- TODO RENAMER look up fixity?
-  Fun [coq arg] <$> convertExpr (OpApp l opE defaultFixity r)
+  undefined -- Fun [coq arg] <$> convertExpr (OpApp noExt l opE defaultFixity r)
 
 --------------------------------------------------------------------------------
 
@@ -449,18 +451,18 @@ convertFunction mg = do
    err = convUnsupported "convertFunction: Empty argument list"
 
 isTrivialMatch :: MatchGroup GhcRn (LHsExpr GhcRn) -> Maybe (Match GhcRn (LHsExpr GhcRn))
-isTrivialMatch (MG (L _ [L _ alt]) _ _ _) = trivMatch alt where
-
-  trivMatch :: Match GhcRn (LHsExpr GhcRn) -> Maybe (Match GhcRn (LHsExpr GhcRn))
-  trivMatch alt = if all trivPat (m_pats alt) then Just alt else Nothing
-
-  trivPat :: LPat GhcRn -> Bool
-  trivPat (L _ (GHC.WildPat _)) = False
-  trivPat (L _ (GHC.VarPat _))  = True
-  trivPat (L _ (GHC.BangPat p)) = trivPat p
-  trivPat (L _ (GHC.LazyPat p)) = trivPat p
-  trivPat (L _ (GHC.ParPat  p)) = trivPat p
-  trivPat _                     = False
+-- isTrivialMatch (MG (L _ [L _ alt]) _ _ _) = trivMatch alt where
+-- 
+--   trivMatch :: Match GhcRn (LHsExpr GhcRn) -> Maybe (Match GhcRn (LHsExpr GhcRn))
+--   trivMatch alt = if all trivPat (m_pats alt) then Just alt else Nothing
+-- 
+--   trivPat :: LPat GhcRn -> Bool
+--   trivPat (L _ (GHC.WildPat _)) = False
+--   trivPat (L _ (GHC.VarPat _))  = True
+--   trivPat (L _ (GHC.BangPat p)) = trivPat p
+--   trivPat (L _ (GHC.LazyPat p)) = trivPat p
+--   trivPat (L _ (GHC.ParPat  p)) = trivPat p
+--   trivPat _                     = False
 isTrivialMatch _ = Nothing
 
 convTrivialMatch ::  LocalConvMonad r m =>
@@ -480,10 +482,10 @@ patToName _                = convUnsupported "patToArg: not a trivial pat"
 --------------------------------------------------------------------------------
 
 isTrueLExpr :: GhcMonad m => LHsExpr GhcRn -> m Bool
-isTrueLExpr (L _ (HsVar x))         = ((||) <$> (== "otherwise") <*> (== "True")) <$> ghcPpr x
-isTrueLExpr (L _ (HsTick _ e))      = isTrueLExpr e
-isTrueLExpr (L _ (HsBinTick _ _ e)) = isTrueLExpr e
-isTrueLExpr (L _ (HsPar e))         = isTrueLExpr e
+-- isTrueLExpr (L _ (HsVar x))         = ((||) <$> (== "otherwise") <*> (== "True")) <$> ghcPpr x
+-- isTrueLExpr (L _ (HsTick _ e))      = isTrueLExpr e
+-- isTrueLExpr (L _ (HsBinTick _ _ e)) = isTrueLExpr e
+-- isTrueLExpr (L _ (HsPar e))         = isTrueLExpr e
 isTrueLExpr _                       = pure False
 
 --------------------------------------------------------------------------------
@@ -530,12 +532,13 @@ convertDoBlock allStmts = do
       Just _                           -> convUnsupported "invalid malformed `do' block"
       Nothing                          -> convUnsupported "invalid empty `do' block"
   where
-    lastStmt (BodyStmt e _ _ _) = Just e
-    lastStmt (LastStmt e _ _)   = Just e
+    -- lastStmt (BodyStmt e _ _ _) = Just e
+    -- lastStmt (LastStmt e _ _)   = Just e
     lastStmt _                  = Nothing
 
     toExpr x rest = toExpr' x rest >>= rewriteExpr
 
+    toExpr' = undefined {-
     toExpr' (BodyStmt e _bind _guard _PlaceHolder) rest =
       monThen <$> convertLExpr e <*> rest
 
@@ -554,11 +557,14 @@ convertDoBlock allStmts = do
 
     toExpr' _ _ =
       convUnsupported "impossibly fancy `do' block statements"
+      -}
 
     monBind e1 e2 = mkInfix e1 "GHC.Base.>>=" e2
     monThen e1 e2 = mkInfix e1 "GHC.Base.>>"  e2
 
 convertListComprehension :: LocalConvMonad r m => [ExprLStmt GhcRn] -> m Term
+convertListComprehension = undefined
+{-
 convertListComprehension allStmts = case fmap unLoc <$> unsnoc allStmts of
   Just (stmts, LastStmt e _applicativeDoInfo _returnInfo) ->
     foldMap (Endo . toExpr . unLoc) stmts `appEndo`
@@ -568,6 +574,7 @@ convertListComprehension allStmts = case fmap unLoc <$> unsnoc allStmts of
   Nothing ->
     convUnsupported "invalid empty list comprehension"
   where
+    toExpr = undefined
     toExpr (BodyStmt e _bind _guard _PlaceHolder) rest =
       isTrueLExpr e >>= \case
         True  -> rest
@@ -589,9 +596,9 @@ convertListComprehension allStmts = case fmap unLoc <$> unsnoc allStmts of
 
     toExpr _ _ =
       convUnsupported "impossibly fancy list comprehension conditions"
-
     concatMapT :: Term
     concatMapT = "Coq.Lists.List.flat_map"
+-}
 
 --------------------------------------------------------------------------------
 
@@ -648,15 +655,16 @@ convertMatchGroup :: LocalConvMonad r m =>
     NonEmpty Term ->
     MatchGroup GhcRn (LHsExpr GhcRn) ->
     m Term
-convertMatchGroup args (MG (L _ alts) _ _ _) = do
-    convAlts <- mapM (convertMatch . unLoc) alts
-    -- TODO: Group
-    convGroups <- groupMatches convAlts
-
-    let scrut = args <&> \arg -> MatchItem arg Nothing Nothing
-    let matches = buildMatch scrut <$> convGroups
-
-    chainFallThroughs matches patternFailure
+convertMatchGroup = undefined
+--convertMatchGroup args (MG (L _ alts) _ _ _) = do
+--    convAlts <- mapM (convertMatch . unLoc) alts
+--    -- TODO: Group
+--    convGroups <- groupMatches convAlts
+--
+--    let scrut = args <&> \arg -> MatchItem arg Nothing Nothing
+--    let matches = buildMatch scrut <$> convGroups
+--
+--    chainFallThroughs matches patternFailure
 
 data HasGuard = HasGuard | HasNoGuard
 
@@ -717,7 +725,7 @@ buildMatch scruts eqns failure = do
 --------------------------------------------------------------------------------
 
 hasGuards :: GRHSs b e -> HasGuard
-hasGuards (GRHSs [ L _ (GRHS [] _) ] _) = HasNoGuard
+-- hasGuards (GRHSs [ L _ (GRHS [] _) ] _) = HasNoGuard
 hasGuards _                             = HasGuard
 
 convertGRHS :: LocalConvMonad r m
@@ -725,10 +733,11 @@ convertGRHS :: LocalConvMonad r m
             -> GRHS GhcRn (LHsExpr GhcRn)
             -> Term -- failure
             -> m Term
-convertGRHS extraGuards (GRHS gs rhs) failure = do
-    convGuards <- (extraGuards ++) <$> convertGuard gs
-    rhs <- convertLExpr rhs
-    guardTerm convGuards rhs failure
+convertGRHS = undefined
+-- convertGRHS extraGuards (GRHS gs rhs) failure = do
+--     convGuards <- (extraGuards ++) <$> convertGuard gs
+--     rhs <- convertLExpr rhs
+--     guardTerm convGuards rhs failure
 
 convertLGRHSList :: LocalConvMonad r m
                  => [ConvertedGuard m]
@@ -757,6 +766,7 @@ data ConvertedGuard m = OtherwiseGuard
 convertGuard :: LocalConvMonad r m => [GuardLStmt GhcRn] -> m [ConvertedGuard m]
 convertGuard [] = pure []
 convertGuard gs = collapseGuards <$> traverse (toCond . unLoc) gs where
+  toCond = undefined {-
   toCond (BodyStmt e _bind _guard _PlaceHolder) =
     isTrueLExpr e >>= \case
       True  -> pure [OtherwiseGuard]
@@ -769,6 +779,7 @@ convertGuard gs = collapseGuards <$> traverse (toCond . unLoc) gs where
     pure $ PatternGuard pat' exp' : map BoolGuard guards
   toCond _ =
     convUnsupported "impossibly fancy guards"
+    -}
 
   -- We optimize the code a bit, and combine
   -- successive boolean guards with andb
@@ -859,7 +870,7 @@ convertTypedBinding convHsTy FunBind{..}   = do
         defn <-
           if all (null . m_pats . unLoc) . unLoc $ mg_alts fun_matches
           then case unLoc $ mg_alts fun_matches of
-                 [L _ (GHC.Match _ [] grhss)] -> convertGRHSs [] grhss patternFailure
+                 -- [L _ (GHC.Match _ [] grhss)] -> convertGRHSs [] grhss patternFailure
                  _ -> convUnsupported "malformed multi-match variable definitions"
           else uncurry Fun <$> convertFunction fun_matches
         
@@ -940,7 +951,7 @@ convertMethodBinding name FunBind{..}   = withCurrentDefinition name $ do
       defn <-
         if all (null . m_pats . unLoc) . unLoc $ mg_alts fun_matches
         then case unLoc $ mg_alts fun_matches of
-               [L _ (GHC.Match _ [] grhss)] -> convertGRHSs [] grhss patternFailure
+               -- [L _ (GHC.Match _ [] grhss)] -> convertGRHSs [] grhss patternFailure
                _ -> convUnsupported "malformed multi-match variable definitions"
         else do
           (argBinders, match) <- convertFunction fun_matches
@@ -1098,6 +1109,7 @@ addRecursion eBindings = do
 --------------------------------------------------------------------------------
 
 convertLocalBinds :: LocalConvMonad r m => HsLocalBinds GhcRn -> m Term -> m Term
+convertLocalBinds = undefined {-
 convertLocalBinds (HsValBinds (ValBindsIn _ _)) _ =
   convUnsupported "Unexpected ValBindsIn in post-renamer AST"
 
@@ -1125,6 +1137,7 @@ convertLocalBinds (HsIPBinds _) _ =
   convUnsupported "local implicit parameter bindings"
 convertLocalBinds EmptyLocalBinds body =
   body
+  -}
 
 --------------------------------------------------------------------------------
 

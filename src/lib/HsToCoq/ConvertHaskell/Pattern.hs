@@ -42,6 +42,8 @@ import HsToCoq.ConvertHaskell.Literals
 --------------------------------------------------------------------------------
 
 convertPat :: (LocalConvMonad r m, MonadWriter [Term] m) => Pat GhcRn -> m Pattern
+convertPat = undefined
+{- 
 convertPat (WildPat PlaceHolder) =
   pure UnderscorePat
 
@@ -159,6 +161,7 @@ convertPat (CoPat _ _ _) =
 
 convertPat SumPat{} =
   convUnsupported "sum type patterns"
+-}
 
 --------------------------------------------------------------------------------
 

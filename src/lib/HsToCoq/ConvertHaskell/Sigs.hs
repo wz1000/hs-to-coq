@@ -36,14 +36,14 @@ data HsSignature = HsSignature { hsSigType   :: LHsSigType GhcRn
 
 collectSigs :: [Sig GhcRn] -> Either String (Map GHC.Name (Either String HsSignature))
 collectSigs sigs = do
-  let asType   = ( , []) . pure
+  let asType   = undefined -- ( , []) . pure
       --asFixity = (S.singleton mname, [], ) . pure
 
       asTypes    lnames sigTy = list $ map ((, asType sigTy) . unLoc) lnames
       --asFixities lnames fixity = list . map (, asFixity fixity) . filter isRdrOperator $ map unLoc lnames
 
   multimap :: M.Map GHC.Name ([LHsSigType GhcRn],[Fixity])
-   <- fmap (M.fromListWith (<>)) . runListT $ list sigs >>= \case
+   <- fmap (M.fromListWith (<>)) . runListT $ list sigs >>= undefined {- \case
     (TypeSig lnames (HsWC wcs hsib))
       | null wcs  -> asTypes lnames hsib
       | otherwise -> throwError "type wildcards found"
@@ -57,7 +57,7 @@ collectSigs sigs = do
     (SCCFunSig{})         -> mempty
     (CompleteMatchSig{})  -> mempty
     (PatSynSig  _ _)      -> throwError "pattern synonym signatures"
-    (IdSig      _)        -> throwError "generated-code signatures"
+    (IdSig      _)        -> throwError "generated-code signatures" -}
 
   pure $ flip M.mapWithKey multimap $ \_key info@(_,_) -> case info of
          ([ty],  [fixity])  -> Right $ HsSignature ty (Just fixity)

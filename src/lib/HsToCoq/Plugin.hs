@@ -164,7 +164,7 @@ install :: [CommandLineOption] -> [CoreToDo] -> CoreM [CoreToDo]
 install _ xs = return $ pass : xs
   where pass = CoreDoPluginPass "GHC.Proof" proofPass
 
-proofPass :: PluginPass -- ModGuts -> CoreM ModGuts
+proofPass :: ModGuts -> CoreM ModGuts
 proofPass guts@ModGuts {..} = do
     dflags <- getDynFlags
     liftIO $ withFile coq WriteMode $ \h -> do

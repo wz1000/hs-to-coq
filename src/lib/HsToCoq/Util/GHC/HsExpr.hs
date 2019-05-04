@@ -11,8 +11,8 @@ import HsExpr
 import TcEvidence (HsWrapper(..))
 
 isGenLitString :: String -> HsExpr pass -> Bool
-isGenLitString str (HsLit (HsString _ fstr)) = fsLit str == fstr
-isGenLitString _   _                          = False
+isGenLitString str (HsLit _ (HsString _ fstr)) = fsLit str == fstr
+isGenLitString _   _                           = False
 
 isNoSyntaxExpr :: SyntaxExpr pass -> Bool
 isNoSyntaxExpr SyntaxExpr{ syn_expr      = expr

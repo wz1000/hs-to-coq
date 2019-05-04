@@ -35,8 +35,8 @@ convertValDecls mdecls = do
   (defns, sigs) <- bitraverse pure convertSigs
                 .  partitionEithers
                 .  flip mapMaybe mdecls $ \case
-                     (ValD def) -> Just $ Left  def
-                     (SigD sig) -> Just $ Right sig
+                     -- (ValD def) -> Just $ Left  def
+                     -- (SigD sig) -> Just $ Right sig
                      _          -> Nothing
 
   handler  <- whenPermissive axiomatizeBinding

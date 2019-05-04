@@ -64,8 +64,8 @@ convertHsGroup HsGroup{..} = do
   mod                 <- view currentModule
   isModuleAxiomatized <- view $ edits.axiomatizedModules.contains mod
   let catchIfAxiomatizing | isModuleAxiomatized = const
-                          | otherwise           = gcatch
-  handler             <- whenPermissive axiomatizeBinding
+                          | otherwise           = undefined --gcatch
+  handler             <- undefined -- whenPermissive axiomatizeBinding
   
   convertedTyClDecls <- convertModuleTyClDecls
                      .  map unLoc
@@ -73,8 +73,9 @@ convertHsGroup HsGroup{..} = do
                          -- Ignore roles
   convertedValDecls  <- -- TODO RENAMER merge with convertLocalBinds / convertModuleValDecls
     case hs_valds of
-      ValBindsIn{} ->
+      ValBinds{} ->
         convUnsupported' "pre-renaming `ValBindsIn' construct post renaming"
+        {-
       ValBindsOut binds lsigs -> do
         sigs  <- convertLSigs lsigs `catchIfAxiomatizing` const @_ @SomeException (pure M.empty)
         defns <- (convertTypedModuleBindings
@@ -116,8 +117,9 @@ convertHsGroup HsGroup{..} = do
         let ordered = foldMap (foldMap (defnsMap M.!)) . topoSortEnvironment $ fmap NoBinding <$> defnsMap
 
         pure $ unnamedSentences ++ ordered
+                      -}
 
-  convertedClsInstDecls <- convertClsInstDecls [cid | grp <- hs_tyclds, L _ (ClsInstD cid) <- group_instds grp]
+  convertedClsInstDecls <- convertClsInstDecls [cid | grp <- hs_tyclds, L _ (ClsInstD _ cid) <- group_instds grp]
 
   convertedAddedDecls <- view (edits.additions.at mod.non [])
 

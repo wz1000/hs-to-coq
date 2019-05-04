@@ -1,4 +1,5 @@
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE GADTs #-}
 
 {-
 This seems to work. But it is a hack!
@@ -27,6 +28,7 @@ import SrcLoc
 import FastString
 import GHC.IO (throwIO)
 import DynFlags
+import BasicTypes
 import qualified GHC.LanguageExtensions as LangExt
 
 -- We need to allow IncoherentInstances for the hack in HsToCoq.Util.GHC.Deriving
@@ -70,23 +72,25 @@ fakeDerivingMod = mkModule interactiveUnitId (mkModuleName "Deriving")
 
 
 instInfoToDecl :: InstInfo GhcRn -> LInstDecl GhcRn
-instInfoToDecl inst_info = noLoc $ ClsInstD (ClsInstDecl {..})
+instInfoToDecl inst_info = noLoc $ ClsInstD noExt (ClsInstDecl {..})
    where
-    cid_poly_ty = HsIB tvars' (noLoc (HsQualTy (noLoc ctxt) inst_head)) True
+    cid_poly_ty = HsIB (HsIBRn tvars' True) (noLoc (HsQualTy noExt (noLoc ctxt) inst_head))
     cid_binds = ib_binds (iBinds inst_info)
     cid_sigs = []
     cid_tyfam_insts = []
     cid_datafam_insts = []
     cid_overlap_mode = Nothing
+    cid_ext = noExt
 
     (tvars, theta, cls, args) = instanceSig (iSpec inst_info)
     tvars' :: [Name]
     tvars' = map tyVarName tvars
     ctxt = map typeToLHsType' theta
-    inst_head = foldl lHsAppTy (noLoc (HsTyVar NotPromoted (noLoc (getName cls)))) $
+    inst_head :: LHsType GhcRn
+    inst_head = foldl lHsAppTy (noLoc (HsTyVar noExt NotPromoted (noLoc (getName cls)))) $
         map typeToLHsType' args
 
-    lHsAppTy f x = noLoc (HsAppTy f x)
+    lHsAppTy f x = noLoc (HsAppTy noExt f x)
 
 -- Taken from HsUtils. We need it to produce a Name, not a RdrName
 typeToLHsType' :: Type -> LHsType GhcRn
@@ -98,21 +102,23 @@ typeToLHsType' ty
       | isPredTy arg
       , (theta, tau) <- tcSplitPhiTy ty
       = noLoc (HsQualTy { hst_ctxt = noLoc (map go theta)
-                        , hst_body = go tau })
+                        , hst_body = go tau
+                        , hst_xqual = noExt })
     go (FunTy arg res) = nlHsFunTy (go arg) (go res)
     go ty@(ForAllTy {})
       | (tvs, tau) <- tcSplitForAllTys ty
       = noLoc (HsForAllTy { hst_bndrs = map go_tv tvs
-                          , hst_body = go tau })
+                          , hst_body = go tau
+                          , hst_xforall = noExt })
     go (TyVarTy tv)         = nlHsTyVar (getName tv)
     go (AppTy t1 t2)        = nlHsAppTy (go t1) (go t2)
-    go (LitTy (NumTyLit n)) = noLoc $ HsTyLit (HsNumTy noSourceText n)
-    go (LitTy (StrTyLit s)) = noLoc $ HsTyLit (HsStrTy noSourceText s)
+    go (LitTy (NumTyLit n)) = noLoc $ HsTyLit noExt (HsNumTy NoSourceText n)
+    go (LitTy (StrTyLit s)) = noLoc $ HsTyLit noExt (HsStrTy NoSourceText s)
     go ty@(TyConApp tc args)
       | any isInvisibleTyConBinder (tyConBinders tc)
         -- We must produce an explicit kind signature here to make certain
         -- programs kind-check. See Note [Kind signatures in typeToLHsType].
-      = noLoc $ HsKindSig lhs_ty (go (TcType.typeKind ty))
+      = noLoc $ HsKindSig noExt lhs_ty (go (TcType.typeKind ty))
       | otherwise = lhs_ty
        where
         lhs_ty = nlHsTyConApp (getName tc) (map go args')
@@ -124,6 +130,6 @@ typeToLHsType' ty
          -- so we must remove them here (Trac #8563)
 
     go_tv :: TyVar -> LHsTyVarBndr GhcRn
-    go_tv tv = noLoc $ KindedTyVar (noLoc (getName tv))
-                                   (go (tyVarKind tv))
+    go_tv tv = noLoc $ KindedTyVar noExt (noLoc (getName tv))
+                                         (go (tyVarKind tv))
 

@@ -51,6 +51,8 @@ addAdditionalConstructorScope ctor@(name, bs, Just resTy) =
 
 convertConDecl :: ConversionMonad r m
                => Term -> [Binder] -> ConDecl GhcRn -> m [Constructor]
+convertConDecl = undefined
+{-
 convertConDecl curType extraArgs (ConDeclH98 lname mlqvs mlcxt details _doc) = do
   unless (maybe True (null . unLoc) mlcxt) $ convUnsupported' "constructor contexts"
 
@@ -84,7 +86,7 @@ convertConDecl _curType extraArgs (ConDeclGADT lnames sigTy _doc) = do
     utvm    <- unusedTyVarModeFor conName
     conTy   <- maybeForall extraArgs <$> convertLHsSigType utvm sigTy
     pure (conName, [], Just conTy)
-
+-}
 --------------------------------------------------------------------------------
 
 rewriteDataTypeArguments :: ConversionMonad r m => DataTypeArguments -> [Binder] -> m ([Binder], [Binder])
@@ -133,7 +135,7 @@ rewriteDataTypeArguments dta bs = do
 convertDataDefn :: ConversionMonad r m
                 => Term -> [Binder] -> HsDataDefn GhcRn
                 -> m (Term, [Constructor])
-convertDataDefn curType extraArgs (HsDataDefn _nd lcxt _ctype ksig cons _derivs) = do
+convertDataDefn curType extraArgs (HsDataDefn _ _nd lcxt _ctype ksig cons _derivs) = do
   unless (null $ unLoc lcxt) $ convUnsupported' "data type contexts"
   (,) <$> maybe (pure $ Sort Type) convertLType ksig
       <*> (traverse addAdditionalConstructorScope =<<
@@ -148,10 +150,12 @@ convertDataDecl name tvs defn = do
   kinds     <- (++ repeat Nothing) . map Just . maybe [] NE.toList <$> view (edits.dataKinds.at coqName)
   let cvtName tv = Ident <$> var TypeNS (unLoc tv)
   let  go :: ConversionMonad r m => LHsTyVarBndr GhcRn -> Maybe Term -> m Binder
+       go = undefined {-
        go (L _ (UserTyVar name))     (Just t) = cvtName name >>= \n -> return $ Typed Ungeneralizable Coq.Explicit (n NE.:| []) t
        go (L _ (UserTyVar name))     Nothing  = cvtName name >>= \n -> return $ Inferred Coq.Explicit n
        go (L _ (KindedTyVar name _)) (Just t) = cvtName name >>= \n -> return $ Typed Ungeneralizable Coq.Explicit (n NE.:| []) t
        go (L _ (KindedTyVar name _)) Nothing  = cvtName name >>= \n -> return $ Inferred Coq.Explicit n  -- dunno if this could happen
+       -}
   rawParams <- zipWithM go tvs kinds
 
   (params, indices) <-

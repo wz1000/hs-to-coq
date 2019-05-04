@@ -118,5 +118,5 @@ var ns name = do
 
 
 recordField :: (ConversionMonad r m) => AmbiguousFieldOcc GhcRn -> m Qualid
-recordField (Unambiguous _ sel) = var ExprNS sel
+recordField (Unambiguous  sel _) = var ExprNS sel
 recordField (Ambiguous _ _)     = error "Cannot handle ambiguous record field names"
